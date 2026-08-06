@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Mental Radial — NIA 520</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14283D;
+    --paper:#EEF2F0;
+    --card:#FFFFFF;
+    --indigo:#3B4B84;
+    --coral:#C1502E;
+    --forest:#2F6B4F;
+    --mustard:#B98620;
+    --plum:#6B3654;
+    --muted:#5C6773;
+    --line-soft:rgba(20,40,61,.28);
+  }
+ 
+  *{box-sizing:border-box;}
+ 
+  body{
+    margin:0;
+    background:var(--paper);
+    font-family:'Inter', sans-serif;
+    color:var(--ink);
+    padding:16px 16px 56px;
+    overflow-x:hidden;
+  }
+ 
+  /* creative layered background: soft color mesh + dot grid */
+  .bg-blobs{
+    position:fixed; inset:0;
+    z-index:0;
+    overflow:hidden;
+    pointer-events:none;
+  }
+  .blob{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(85px);
+    opacity:.38;
+    mix-blend-mode:multiply;
+    will-change:transform;
+  }
+  .blob.b1{ width:560px; height:560px; left:-140px; top:-120px; background:var(--indigo); animation:driftA 24s ease-in-out infinite alternate; }
+  .blob.b2{ width:480px; height:480px; right:-120px; top:-60px; background:var(--coral); animation:driftB 30s ease-in-out infinite alternate; }
+  .blob.b3{ width:520px; height:520px; right:-140px; bottom:-140px; background:var(--forest); animation:driftA 33s ease-in-out infinite alternate-reverse; }
+  .blob.b4{ width:460px; height:460px; left:-120px; bottom:-100px; background:var(--mustard); animation:driftB 27s ease-in-out infinite alternate-reverse; }
+  .blob.b5{ width:420px; height:420px; left:50%; top:38%; background:var(--plum); opacity:.22; animation:driftC 40s ease-in-out infinite alternate; }
+ 
+  @keyframes driftA{
+    from{ transform:translate(0,0) scale(1); }
+    to{ transform:translate(60px,40px) scale(1.12); }
+  }
+  @keyframes driftB{
+    from{ transform:translate(0,0) scale(1); }
+    to{ transform:translate(-50px,55px) scale(1.08); }
+  }
+  @keyframes driftC{
+    from{ transform:translate(-50%,-50%) scale(1); }
+    to{ transform:translate(-46%,-54%) scale(1.15); }
+  }
+  @media (prefers-reduced-motion:reduce){ .blob{ animation:none; } }
+ 
+  .dot-grid{
+    position:fixed; inset:0;
+    z-index:0;
+    pointer-events:none;
+    background-image:radial-gradient(rgba(20,40,61,.16) 1px, transparent 1px);
+    background-size:24px 24px;
+    -webkit-mask-image:radial-gradient(circle at 50% 32%, black 0%, transparent 72%);
+    mask-image:radial-gradient(circle at 50% 32%, black 0%, transparent 72%);
+    opacity:.55;
+  }
+ 
+  /* floating particles */
+  .particle-field{
+    position:fixed; inset:0;
+    pointer-events:none;
+    z-index:0;
+    overflow:hidden;
+  }
+  .particle{
+    position:absolute;
+    width:5px; height:5px;
+    border-radius:50%;
+    background:var(--forest);
+    opacity:.25;
+    animation:floaty 14s ease-in-out infinite;
+  }
+  @keyframes floaty{
+    0%,100%{ transform:translateY(0) translateX(0); }
+    50%{ transform:translateY(-38px) translateX(14px); }
+  }
+  @media (prefers-reduced-motion:reduce){ .particle{ animation:none; } }
+ 
+  .sheet{ position:relative; z-index:1; }
+ 
+  .sheet{ max-width:1720px; margin:0 auto; }
+ 
+  /* ---------- HEADER ---------- */
+  header{
+    text-align:center;
+    margin-bottom:10px;
+    animation:dropIn .7s cubic-bezier(.2,.7,.3,1) both;
+  }
+  @keyframes dropIn{
+    from{ opacity:0; transform:translateY(-14px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @media (prefers-reduced-motion:reduce){ header{ animation:none; } }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--forest);
+    margin:0 0 10px;
+  }
+  header h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(28px,4vw,42px);
+    margin:0 0 8px;
+    letter-spacing:-.01em;
+  }
+  header p.sub{
+    font-size:14px;
+    color:var(--muted);
+    margin:0 auto;
+    max-width:620px;
+    line-height:1.5;
+  }
+ 
+  /* ---------- CANVAS ---------- */
+  .canvas-wrap{ overflow-x:auto; padding:0 0 4px; }
+  .canvas{ position:relative; width:1600px; height:1380px; margin:0 auto; }
+ 
+  svg.lines{ position:absolute; inset:0; width:1600px; height:1380px; pointer-events:none; }
+  svg.lines .flow{
+    stroke-dasharray:5 9;
+    animation:flowDash 1.8s linear infinite;
+  }
+  @keyframes flowDash{ to{ stroke-dashoffset:-140; } }
+  @media (prefers-reduced-motion:reduce){ svg.lines .flow{ animation:none; stroke-dasharray:none; } }
+  svg.lines .node-dot{
+    animation:dotPulse 2.6s ease-in-out infinite;
+  }
+  @keyframes dotPulse{
+    0%,100%{ r:4; opacity:1; }
+    50%{ r:5.5; opacity:.65; }
+  }
+  @media (prefers-reduced-motion:reduce){ svg.lines .node-dot{ animation:none; } }
+ 
+  /* ---------- HUB ---------- */
+  .hub-glow{
+    position:absolute;
+    left:610px; top:430px;
+    width:440px; height:440px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(185,134,32,.28), rgba(185,134,32,0) 68%);
+    animation:pulseGlow 4.5s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{
+    0%,100%{ opacity:.55; transform:scale(1); }
+    50%{ opacity:1; transform:scale(1.08); }
+  }
+  @media (prefers-reduced-motion:reduce){ .hub-glow{ animation:none; opacity:.7; } }
+ 
+  .hub-ring{
+    position:absolute;
+    left:660px; top:480px;
+    width:340px; height:340px;
+    border-radius:50%;
+    border:1.5px dashed rgba(20,40,61,.25);
+    animation:spin 60s linear infinite;
+  }
+  .hub-ring2{
+    position:absolute;
+    left:635px; top:455px;
+    width:390px; height:390px;
+    border-radius:50%;
+    border:1px dotted rgba(185,134,32,.4);
+    animation:spin 90s linear infinite reverse;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ .hub-ring, .hub-ring2{ animation:none; } }
+ 
+  .hub{
+    position:absolute;
+    left:700px; top:520px;
+    width:260px; height:260px;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 30% 26%, rgba(255,255,255,.14), transparent 60%),
+      linear-gradient(155deg, #1B3350, var(--ink) 65%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:#EFE9DC;
+    box-shadow:0 14px 30px rgba(20,40,61,.32), 0 0 0 rgba(185,134,32,.5);
+    border:3px solid rgba(185,134,32,.55);
+    animation:breathe 4.5s ease-in-out infinite, popIn .6s cubic-bezier(.2,.7,.3,1) both;
+    animation-delay:0s, .1s;
+  }
+  @keyframes breathe{
+    0%,100%{ box-shadow:0 14px 30px rgba(20,40,61,.32), 0 0 0 rgba(185,134,32,.35); }
+    50%{ box-shadow:0 14px 34px rgba(20,40,61,.36), 0 0 26px rgba(185,134,32,.45); }
+  }
+  @keyframes popIn{
+    from{ opacity:0; transform:scale(.75); }
+    to{ opacity:1; transform:scale(1); }
+  }
+  @media (prefers-reduced-motion:reduce){ .hub{ animation:none; } }
+  .hub .code{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:.24em;
+    color:#D7B463;
+    margin-bottom:6px;
+  }
+  .hub h2{
+    font-family:'Fraunces', serif;
+    font-size:27px;
+    font-weight:600;
+    margin:0 0 8px;
+    line-height:1.18;
+  }
+  .hub p{
+    font-size:11.5px;
+    max-width:180px;
+    margin:0;
+    color:#C9CFDA;
+    line-height:1.42;
+  }
+ 
+  /* ---------- CARDS ---------- */
+  .card{
+    position:absolute;
+    background:var(--card);
+    border-radius:20px;
+    padding:20px 22px 22px;
+    box-shadow:0 6px 20px rgba(20,40,61,.10);
+    border:1px solid rgba(20,40,61,.08);
+    transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    opacity:0;
+    animation:cardIn .65s cubic-bezier(.2,.7,.3,1) both;
+  }
+  @keyframes cardIn{
+    from{ opacity:0; transform:translateY(18px) scale(.96); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  .card.c1{ animation-delay:.35s; }
+  .card.c2{ animation-delay:.5s; }
+  .card.c3{ animation-delay:.65s; }
+  .card.c4{ animation-delay:.8s; }
+  .card.c5{ animation-delay:.95s; }
+ 
+  .card:hover{ transform:translateY(-6px) scale(1.015); box-shadow:0 20px 36px rgba(20,40,61,.18); }
+  .card.c1:hover{ border-color:rgba(59,75,132,.45); }
+  .card.c2:hover{ border-color:rgba(193,80,46,.45); }
+  .card.c3:hover{ border-color:rgba(47,107,79,.45); }
+  .card.c4:hover{ border-color:rgba(185,134,32,.45); }
+  .card.c5:hover{ border-color:rgba(107,54,84,.45); }
+ 
+  @media (prefers-reduced-motion:reduce){
+    .card{ transition:none; opacity:1; animation:none; }
+    .card:hover{ transform:none; }
+  }
+ 
+  .badge{ transition:transform .25s ease; }
+  .card:hover .badge{ transform:scale(1.12) rotate(-6deg); }
+  @media (prefers-reduced-motion:reduce){ .card:hover .badge{ transform:none; } }
+ 
+  .card::before{
+    content:"";
+    position:absolute;
+    top:0; left:22px; right:22px;
+    height:4px;
+    border-radius:0 0 4px 4px;
+  }
+  .c1::before{ background:var(--indigo); }
+  .c2::before{ background:var(--coral); }
+  .c3::before{ background:var(--forest); }
+  .c4::before{ background:var(--mustard); }
+  .c5::before{ background:var(--plum); }
+ 
+  .card.c1{ left:600px; top:50px; width:460px; height:280px; }
+  .card.c2{ left:1048px; top:383px; width:440px; height:250px; }
+  .card.c3{ left:894px; top:865px; width:460px; height:380px; }
+  .card.c4{ left:340px; top:897px; width:440px; height:250px; }
+  .card.c5{ left:173px; top:378px; width:440px; height:260px; }
+ 
+  .card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .badge{
+    width:34px; height:34px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; font-weight:600;
+    color:#fff;
+    flex:none;
+  }
+  .c1 .badge{ background:var(--indigo); }
+  .c2 .badge{ background:var(--coral); }
+  .c3 .badge{ background:var(--forest); }
+  .c4 .badge{ background:var(--mustard); }
+  .c5 .badge{ background:var(--plum); }
+ 
+  .card-head h3{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:19px;
+    margin:0;
+    flex:1;
+  }
+  .ref-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+ 
+  .card ul{ margin:0; padding:0; list-style:none; }
+  .card li{
+    font-size:13px;
+    line-height:1.5;
+    margin-bottom:9px;
+    padding-left:16px;
+    position:relative;
+  }
+  .card li::before{
+    content:"";
+    position:absolute; left:0; top:7px;
+    width:6px; height:6px;
+    border-radius:50%;
+  }
+  .c1 li::before{ background:var(--indigo); }
+  .c2 li::before{ background:var(--coral); }
+  .c3 li::before{ background:var(--forest); }
+  .c4 li::before{ background:var(--mustard); }
+  .c5 li::before{ background:var(--plum); }
+  .card li b{ font-weight:600; }
+ 
+  .pill{
+    display:inline-block;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:600;
+    font-size:10.5px;
+    color:#fff;
+    border-radius:20px;
+    padding:1px 7px;
+    margin-right:6px;
+  }
+  .c3 .pill{ background:var(--forest); }
+  .c5 .pill{ background:var(--plum); }
+ 
+  /* ---------- LEGEND ---------- */
+  footer{
+    max-width:1720px;
+    margin:16px auto 0;
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px 30px;
+    justify-content:center;
+    align-items:center;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .swatch{ display:inline-flex; align-items:center; gap:7px; }
+  .swatch i{ width:11px; height:11px; border-radius:50%; display:inline-block; }
+</style>
+</head>
+<body>
+<div class="bg-blobs">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+  <div class="blob b5"></div>
+</div>
+<div class="dot-grid"></div>
+<div class="particle-field" id="particleField"></div>
+<div class="sheet">
+ 
+  <header>
+    <p class="eyebrow">Auditoría de Estados Financieros</p>
+    <h1>NIA 520 — Procedimientos Analíticos</h1>
+    <p class="sub">Mapa mental de la norma: del fundamento conceptual a la investigación de diferencias, pasando por los procedimientos analíticos sustantivos y la conclusión global.</p>
+  </header>
+ 
+  <div class="canvas-wrap">
+    <div class="canvas">
+ 
+      <svg class="lines" viewBox="0 0 1600 1380">
+        <path d="M830,520 Q855,425 830,330" fill="none" stroke="#3B4B84" stroke-width="2.5" stroke-linecap="round" opacity="0.28"/>
+        <path class="flow" d="M830,520 Q855,425 830,330" fill="none" stroke="#3B4B84" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+        <path d="M954,610 Q1009,618 1048,579" fill="none" stroke="#C1502E" stroke-width="2.5" stroke-linecap="round" opacity="0.28"/>
+        <path class="flow" d="M954,610 Q1009,618 1048,579" fill="none" stroke="#C1502E" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+        <path d="M906,755 Q926,825 986,865" fill="none" stroke="#2F6B4F" stroke-width="2.5" stroke-linecap="round" opacity="0.28"/>
+        <path class="flow" d="M906,755 Q926,825 986,865" fill="none" stroke="#2F6B4F" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+        <path d="M754,755 Q682,811 651,897" fill="none" stroke="#B98620" stroke-width="2.5" stroke-linecap="round" opacity="0.28"/>
+        <path class="flow" d="M754,755 Q682,811 651,897" fill="none" stroke="#B98620" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+        <path d="M706,610 Q667,571 613,580" fill="none" stroke="#6B3654" stroke-width="2.5" stroke-linecap="round" opacity="0.28"/>
+        <path class="flow" d="M706,610 Q667,571 613,580" fill="none" stroke="#6B3654" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+ 
+        <circle class="node-dot" cx="830" cy="520" r="4" fill="#3B4B84"/><circle class="node-dot" cx="830" cy="330" r="4" fill="#3B4B84"/>
+        <circle class="node-dot" cx="954" cy="610" r="4" fill="#C1502E"/><circle class="node-dot" cx="1048" cy="579" r="4" fill="#C1502E"/>
+        <circle class="node-dot" cx="906" cy="755" r="4" fill="#2F6B4F"/><circle class="node-dot" cx="986" cy="865" r="4" fill="#2F6B4F"/>
+        <circle class="node-dot" cx="754" cy="755" r="4" fill="#B98620"/><circle class="node-dot" cx="651" cy="897" r="4" fill="#B98620"/>
+        <circle class="node-dot" cx="706" cy="610" r="4" fill="#6B3654"/><circle class="node-dot" cx="613" cy="580" r="4" fill="#6B3654"/>
+      </svg>
+ 
+      <div class="hub-glow"></div>
+      <div class="hub-ring2"></div>
+      <div class="hub-ring"></div>
+      <div class="hub">
+        <p class="code">ISA · NIA 520</p>
+        <h2>Procedimientos<br>Analíticos</h2>
+        <p>Análisis de relaciones plausibles entre datos financieros y no financieros.</p>
+      </div>
+ 
+      <!-- C1 Fundamentos -->
+      <div class="card c1">
+        <div class="card-head">
+          <span class="badge">1–4</span>
+          <h3>Fundamentos</h3>
+          <span class="ref-tag">Apartados 1–4</span>
+        </div>
+        <ul>
+          <li><b>Alcance:</b> procedimientos analíticos sustantivos + los aplicados cerca del cierre para la conclusión global.</li>
+          <li><b>Vínculo normativo:</b> NIA 315 (valoración del riesgo) y NIA 330 (respuesta a riesgos).</li>
+          <li><b>Vigencia:</b> periodos iniciados a partir del 15-dic-2009.</li>
+          <li><b>Objetivos:</b> evidencia relevante y fiable, y conclusión global congruente con la entidad.</li>
+          <li><b>Definición:</b> incluye investigar variaciones significativas frente a lo esperado.</li>
+        </ul>
+      </div>
+ 
+      <!-- C2 Tipos y métodos -->
+      <div class="card c2">
+        <div class="card-head">
+          <span class="badge">A1</span>
+          <h3>Tipos y Métodos</h3>
+          <span class="ref-tag">Ref. A1–A3</span>
+        </div>
+        <ul>
+          <li><b>Comparaciones:</b> periodos anteriores, presupuestos/pronósticos, información sectorial.</li>
+          <li><b>Relaciones:</b> partidas predecibles (márgenes) y financiera vs. no financiera (nómina/empleados).</li>
+          <li><b>Complejidad:</b> desde comparaciones simples hasta estadística avanzada; aplicable a consolidados, componentes o partidas.</li>
+        </ul>
+      </div>
+ 
+      <!-- C3 Procedimientos sustantivos -->
+      <div class="card c3">
+        <div class="card-head">
+          <span class="badge">§5</span>
+          <h3>Procedimientos Sustantivos</h3>
+          <span class="ref-tag">Apartado 5 · A4–A16</span>
+        </div>
+        <ul>
+          <li><span class="pill">a</span><b>Idoneidad</b> — grandes volúmenes previsibles; se pondera con pruebas de detalle.</li>
+          <li><span class="pill">b</span><b>Fiabilidad de los datos</b> — fuente, comparabilidad, relevancia y controles de preparación.</li>
+          <li><span class="pill">c</span><b>Precisión de la expectativa</b> — exactitud prevista, desagregación, disponibilidad.</li>
+          <li><span class="pill">d</span><b>Diferencia aceptable</b> — importancia relativa + riesgo valorado.</li>
+        </ul>
+      </div>
+ 
+      <!-- C4 Conclusión global -->
+      <div class="card c4">
+        <div class="card-head">
+          <span class="badge">§6</span>
+          <h3>Conclusión Global</h3>
+          <span class="ref-tag">Apartado 6 · A17–A19</span>
+        </div>
+        <ul>
+          <li>Se aplica <b>cerca del cierre</b> de la auditoría.</li>
+          <li>Corrobora las conclusiones de componentes individuales.</li>
+          <li>Riesgo no detectado antes → revisar valoración (NIA 315).</li>
+        </ul>
+      </div>
+ 
+      <!-- C5 Investigación -->
+      <div class="card c5">
+        <div class="card-head">
+          <span class="badge">§7</span>
+          <h3>Investigación de Diferencias</h3>
+          <span class="ref-tag">Apartado 7 · A20–A21</span>
+        </div>
+        <ul>
+          <li><b>Disparador:</b> variaciones o relaciones incongruentes o significativas.</li>
+          <li><span class="pill">a</span>Indagar ante la dirección y obtener evidencia de sus respuestas.</li>
+          <li><span class="pill">b</span>Aplicar otros procedimientos si la explicación no es adecuada.</li>
+        </ul>
+      </div>
+ 
+    </div>
+  </div>
+ 
+  <footer>
+    <span class="swatch"><i style="background:#3B4B84"></i>Fundamentos</span>
+    <span class="swatch"><i style="background:#C1502E"></i>Tipos y métodos</span>
+    <span class="swatch"><i style="background:#2F6B4F"></i>Procedimientos sustantivos</span>
+    <span class="swatch"><i style="background:#B98620"></i>Conclusión global</span>
+    <span class="swatch"><i style="background:#6B3654"></i>Investigación de diferencias</span>
+  </footer>
+ 
+</div>
+ 
+<script>
+  // Genera partículas flotantes decorativas (respeta prefers-reduced-motion)
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const field = document.getElementById('particleField');
+  if (field && !reduceMotion) {
+    const colors = ['#3B4B84', '#C1502E', '#2F6B4F', '#B98620', '#6B3654'];
+    const count = 26;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.top = Math.random() * 100 + 'vh';
+      p.style.background = colors[i % colors.length];
+      p.style.animationDuration = (10 + Math.random() * 10) + 's';
+      p.style.animationDelay = (Math.random() * 6) + 's';
+      p.style.opacity = (0.12 + Math.random() * 0.18).toFixed(2);
+      field.appendChild(p);
+    }
+  }
+</script>
+ 
+</body>
+</html>
